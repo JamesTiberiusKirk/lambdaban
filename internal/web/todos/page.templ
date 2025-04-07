@@ -1,0 +1,48 @@
+package todos
+
+import "github.com/JamesTiberiusKirk/todoist/internal/models"
+import "strconv"
+import "github.com/JamesTiberiusKirk/todoist/internal/comoponents"
+
+templ page(userId string, todos []models.Todos) {
+	@comoponents.Layout() {
+		<p>{ userId }</p>
+		<form action="/todos" method="POST">
+			<input class="cs-input" type="text" name="title"/>
+			<input class="cs-input" type="text" name="description"/>
+			<button class="cs-btn" type="submit" name="add">Add</button>
+		</form>
+		<p>Length: { strconv.Itoa(len(todos)) }</p>
+		<div class={ todoList() }>
+			for  _,t:=range todos {
+				<div class={ "cs-panel", todoCard() }>
+					<form hx-target="body" hx-delete hx-trigger="click">
+						<input type="hidden" name="todo_id" value={ t.Id }/>
+						<button class="cs-btn close" id="close" type="submit"></button>
+					</form>
+					<h1>{ t.Title }</h1>
+					<p>{ t.Description }</p>
+					<p><b>Status:</b> { t.Status.String() }</p>
+					<p><b>Created at:</b> { t.CreatedAt.Format("2006-01-02 15:04:05") }</p>
+					<p><b>Last touched:</b> { t.LastUpdatedAt.Format("2006-01-02 15:04:05") }</p>
+					<p><b>ID:</b> { t.Id }</p>
+					<!-- Your content here -->
+					// <div class="dialog-buttons">
+					// 	<button class="cs-btn" id="confirm">Confirm</button>
+					// 	<button class="cs-btn" id="cancel">Cancel</button>
+					// </div>
+				</div>
+			}
+		</div>
+	}
+}
+
+css todoList() {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+css todoCard() {
+	width: 350px;
+}
