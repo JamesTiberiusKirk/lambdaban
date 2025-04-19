@@ -8,7 +8,9 @@ package comoponents
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Layout() templ.Component {
+import "net/http"
+
+func Layout(r *http.Request) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,29 +31,7 @@ func Layout() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html><head><title>Todos</title><link rel=\"stylesheet\" type=\"text/css\" href=\"https://cdn.jsdelivr.net/gh/ekmas/cs16.css@main/css/cs16.min.css\"><script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script><style>\n\t\t\t.cs-panel {\n\t\t\t  display: block;\n\t\t\t  position: relative;\n\t\t\t  padding: 32px 39px 27px;\n\t\t\t  background: var(--bg);\n\t\t\t  width: 100%;\n\t\t\t  border-left: solid 1px var(--border-light);\n\t\t\t  border-bottom: solid 1px var(--border-dark);\n\t\t\t  border-right: solid 1px var(--border-dark);\n\t\t\t  border-top: solid 1px var(--border-light);\n\t\t\t  color: var(--text);\n\t\t\t}\n\n\t\t\t.cs-panel .dialog-buttons {\n\t\t\t  display: flex;\n\t\t\t  justify-content: space-between;\n\t\t\t  margin-top: 20px;\n\t\t\t}\n\n\t\t\t.cs-panel .dialog-buttons button {\n\t\t\t  width: 120px;\n\t\t\t}\n\n\t\t\t.cs-panel .close {\n\t\t\t  position: absolute;\n\t\t\t  top: 10px; /* Adjust based on your padding */\n\t\t\t  right: 10px; /* Adjust based on your padding */\n\t\t\t  padding: 0px;\n\t\t\t  width: 18px;\n\t\t\t  height: 18px;\n\t\t\t  background: no-repeat center center;\n\t\t\t  background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M3,3 4,3 4,4 3,4 M4,3 5,3 5,4 4,4 M3,4 4,4 4,5 3,5 M4,4 5,4 5,5 4,5 M4,5 5,5 5,6 4,6 M5,5 6,5 6,6 5,6 M5,4 6,4 6,5 5,5 M5,6 6,6 6,7 5,7 M6,6 7,6 7,7 6,7 M6,5 7,5 7,6 6,6 M6,7 7,7 7,8 6,8 M6,8 7,8 7,9 6,9 M7,8 8,8 8,9 7,9 M7,7 8,7 8,8 7,8 M7,6 8,6 8,7 7,7 M8,6 9,6 9,7 8,7 M8,7 9,7 9,8 8,8 M8,8 9,8 9,9 8,9 M8,5 9,5 9,6 8,6 M9,5 10,5 10,6 9,6 M9,6 10,6 10,7 9,7 M9,4 10,4 10,5 9,5 M10,4 11,4 11,5 10,5 M10,5 11,5 11,6 10,6 M10,3 11,3 11,4 10,4 M11,3 12,3 12,4 11,4 M11,4 12,4 12,5 11,5 M9,8 10,8 10,9 9,9 M9,9 10,9 10,10 9,10 M8,9 9,9 9,10 8,10 M10,9 11,9 11,10 10,10 M10,10 11,10 11,11 10,11 M9,10 10,10 10,11 9,11 M11,10 12,10 12,11 11,11 M11,11 12,11 12,12 11,12 M10,11 11,11 11,12 10,12 M5,8 6,8 6,9 5,9 M5,9 6,9 6,10 5,10 M6,9 7,9 7,10 6,10 M4,9 5,9 5,10 4,10 M4,10 5,10 5,11 4,11 M5,10 6,10 6,11 5,11 M3,10 4,10 4,11 3,11 M3,11 4,11 4,12 3,12 M4,11 5,11 5,12 4,12 ' fill='%238c9284'/%3E%3C/svg%3E\");\n\t\t\t  }\n\n\t\t\t  &:focus-visible {\n\t\t\t    padding: 0;\n\t\t\t    outline: 0;\n\t\t\t  }\n\t\t\t}\n\t\t\t</style></head>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var2 = []any{body()}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<body class=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var2).String())
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/comoponents/layout.templ`, Line: 1, Col: 0}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html><head><title>Todos</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"stylesheet\" type=\"text/css\" href=\"assets/cs16.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"assets/index.css\"><script src=\"https://unpkg.com/htmx.org@2.0.4\"></script><script src=\"https://unpkg.com/htmx-ext-sse@2.2.2\"></script><!-- <script src=\"https://unpkg.com/htmx.org@1.9.12/dist/ext/debug.js\"></script> --><script src=\"https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js\"></script><script src=\"https://unpkg.com/alpinejs\" defer></script></head><body><div class=\"notifications\" hx-swap=\"beforeend scroll:bottom\" hx-ext=\"sse\" sse-connect=\"/notifications\" sse-swap=\"notification\"></div><div class=\"layout\"><div style=\"display: flex; \"><img style=\"margin-top: auto; margin-bottom: auto;\" src=\"/assets/lambda.png\" alt=\"Lambda\" width=\"30\" height=\"30\"><h1 style=\"padding-left: 10px;\">LambdaBan</h1></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -59,22 +39,12 @@ func Layout() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		return nil
 	})
-}
-
-func body() templ.CSSClass {
-	templ_7745c5c3_CSSBuilder := templruntime.GetBuilder()
-	templ_7745c5c3_CSSBuilder.WriteString(`padding:2em;`)
-	templ_7745c5c3_CSSID := templ.CSSID(`body`, templ_7745c5c3_CSSBuilder.String())
-	return templ.ComponentCSSClass{
-		ID:    templ_7745c5c3_CSSID,
-		Class: templ.SafeCSS(`.` + templ_7745c5c3_CSSID + `{` + templ_7745c5c3_CSSBuilder.String() + `}`),
-	}
 }
 
 var _ = templruntime.GeneratedTemplate

@@ -1,48 +1,240 @@
 package todos
 
-import "github.com/JamesTiberiusKirk/todoist/internal/models"
-import "strconv"
-import "github.com/JamesTiberiusKirk/todoist/internal/comoponents"
+import (
+	"github.com/JamesTiberiusKirk/lambdaban/internal/comoponents"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
+	"net/http"
+)
 
-templ page(userId string, todos []models.Todos) {
-	@comoponents.Layout() {
-		<p>{ userId }</p>
-		<form action="/todos" method="POST">
-			<input class="cs-input" type="text" name="title"/>
-			<input class="cs-input" type="text" name="description"/>
-			<button class="cs-btn" type="submit" name="add">Add</button>
-		</form>
-		<p>Length: { strconv.Itoa(len(todos)) }</p>
-		<div class={ todoList() }>
-			for  _,t:=range todos {
-				<div class={ "cs-panel", todoCard() }>
-					<form hx-target="body" hx-delete hx-trigger="click">
-						<input type="hidden" name="todo_id" value={ t.Id }/>
-						<button class="cs-btn close" id="close" type="submit"></button>
-					</form>
-					<h1>{ t.Title }</h1>
-					<p>{ t.Description }</p>
-					<p><b>Status:</b> { t.Status.String() }</p>
-					<p><b>Created at:</b> { t.CreatedAt.Format("2006-01-02 15:04:05") }</p>
-					<p><b>Last touched:</b> { t.LastUpdatedAt.Format("2006-01-02 15:04:05") }</p>
-					<p><b>ID:</b> { t.Id }</p>
-					<!-- Your content here -->
-					// <div class="dialog-buttons">
-					// 	<button class="cs-btn" id="confirm">Confirm</button>
-					// 	<button class="cs-btn" id="cancel">Cancel</button>
-					// </div>
-				</div>
-			}
-		</div>
+func getBoardSwapAttribs() templ.Attributes {
+	return templ.Attributes{
+		"hx-target": "#board_form",
+		"hx-select": "#board_form",
+		"hx-swap":"outerHTML",
 	}
 }
 
-css todoList() {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
+templ page(r *http.Request, userId string, todos, inProgress, done []models.Ticket) {
+	@comoponents.Layout(r) {
+		@addTicketDialogue()
+		@confirmationDialogue()
+		<form
+			id="board_form"
+			class={ "cs-panel", boardForm() }
+			{ getBoardSwapAttribs()... }
+			hx-put="/todos"
+			hx-trigger="reorder"
+		>
+			<div class={ board() }>
+				<div class={ col(), divider() }>
+					<h1>TODOs:</h1>
+					<div id="todo" class={ stack() }>
+						for _, t := range todos {
+							@ticketCard(t)
+						}
+					</div>
+				</div>
+				<div class={ col(), divider() }>
+					<h1>In Progress:</h1>
+					<div id="in-progress" class={ stack() }>
+						for _, t := range inProgress {
+							@ticketCard(t)
+						}
+					</div>
+				</div>
+				<div class={ col() }>
+					<h1>Done:</h1>
+					<div id="done" class={ stack() }>
+						for _, t := range done {
+							@ticketCard(t)
+						}
+					</div>
+				</div>
+			</div>
+		</form>
+		@pageScript()
+	}
 }
 
-css todoCard() {
-	width: 350px;
+script pageScript() {
+	htmx.onLoad(function(content) {
+		["todo", "in-progress", "done"].forEach((s)=>{
+			new Sortable(document.getElementById(s), {
+				group: 'kanban_board', // set both lists to same group
+				animation: 150,
+				onMove: function (evt) {},
+				// Disable sorting on the `end` event
+				onEnd: function (evt) {
+					const target = evt.to.id
+					document.getElementById(evt.item.id+"_status").value = target
+					htmx.trigger("#board_form", "reorder")
+					this.option("disabled", true);
+				}
+			});
+		})
+	})
+}
+
+templ addTicketDialogue() {
+	<section>
+		<button
+			type="button"
+			class={ "cs-btn", newTicketButton() }
+			onclick="document.getElementById('new-ticket-dialogue').showModal();"
+		>
+			New Ticket
+		</button>
+		<dialog id="new-ticket-dialogue" class="cs-dialog">
+			<div class="heading">
+				<div class="wrapper">
+					<div class="icon"></div>
+					<p class="text">New Ticket</p>
+				</div>
+				<button
+					class="cs-btn close"
+					onclick="document.getElementById('new-ticket-dialogue').close();"
+				></button>
+			</div>
+			<form
+				id="newTicket"
+				{ getBoardSwapAttribs()... }
+				hx-post
+				hx-trigger="submit"
+				hx-on:htmx:after-request="document.getElementById('new-ticket-dialogue').close();"
+			>
+				<div class={ formContainer() }>
+					<div class={ form() }>
+						<div>
+							<input class="cs-input" id="title" name="title" type="input"/>
+							<label class="cs-input__label" for="title">Title</label>
+						</div>
+						<div>
+							<input class="cs-input" type="text" name="description" id="description"/>
+							<label class="cs-input__label" for="description">Description</label>
+						</div>
+						<div>
+							<label class="cs-select__label" for="status">Status:</label>
+							<select class="cs-select" name="status" id="status">
+								<option value="todo">Todo</option>
+								<option value="in-progress">In progress</option>
+								<option value="done">Done</option>
+							</select>
+						</div>
+						<button class="cs-btn" type="submit">Create</button>
+					</div>
+				</div>
+			</form>
+		</dialog>
+	</section>
+}
+
+templ confirmationDialogue() {
+	<section>
+		<dialog id="confirmation-dialogue" class="cs-dialog">
+			<div class="heading">
+				<div class="wrapper">
+					<div class="icon"></div>
+					<p class="text">Are you sure you want to delete this ticket?</p>
+				</div>
+				<button
+					class="cs-btn close"
+					onclick="document.getElementById('confirmation-dialogue').close();"
+				></button>
+			</div>
+			<menu class="footer-btns">
+				<input id="to-delete" type="hidden" name="todo_id" value=""/>
+				<button
+					hx-delete
+					{ getBoardSwapAttribs()... }
+					hx-include="#to-delete"
+					class="cs-btn"
+					hx-on:htmx:before-request={ clearDelete() }
+				>Delete</button>
+				<button
+					class="cs-btn"
+					onclick={ clearDelete() }
+				>Cancel</button>
+			</menu>
+		</dialog>
+	</section>
+}
+
+script clearDelete() {
+	document.getElementById("to-delete").value = ""
+	document.getElementById('confirmation-dialogue').close();
+}
+
+script onTicketDeleteClick(ticketId string) {
+	document.getElementById("to-delete").value = ticketId
+	document.getElementById('confirmation-dialogue').showModal()
+}
+
+templ ticketCard(t models.Ticket) {
+	<div id={ t.Id } class={ "ticket", "cs-panel" }>
+		<button class="cs-btn close" type="button" onclick={ onTicketDeleteClick(t.Id) }></button>
+		<h1>{ t.Title }</h1>
+		<p>{ t.Description }</p>
+		<p><b>Status:</b> { t.Status.String() }</p>
+		<p><b>Created at:</b> { t.CreatedAt.Format("2006-01-02 15:04:05") }</p>
+		<p><b>Last touched:</b> { t.LastUpdatedAt.Format("2006-01-02 15:04:05") }</p>
+		<p><b>ID:</b> { t.Id }</p>
+		<input name="id" value={ t.Id } hidden/>
+		<input id={ t.Id + "_status" } name="status" value={ t.Status.String() } hidden/>
+	</div>
+}
+
+css boardForm() {
+	flex: 1 1 auto;        
+	min-height: 0;  
+	overflow-y: auto;
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+css board() {
+	display: flex;
+	flex-direction: row;
+}
+
+css divider() {
+	border-right: 2px solid var(--border-dark);
+	box-shadow: inset -1px 0 var(--border-light);
+}
+
+css col() {
+	width: 33%; 
+	padding: 10px;
+}
+
+css stack() {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	gap: 10px;
+	width: 100%; 
+	height: 100%;
+	overflow-y: auto;
+}
+
+css form() {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px;
+}
+
+css formContainer() {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+css newTicketButton() {
+	position: fixed;
+	right: 10px;
+	bottom: 10px;
+	z-index: 100;
+	font-size: 32px;
+	padding: 15px;
 }

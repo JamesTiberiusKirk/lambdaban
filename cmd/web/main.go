@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/JamesTiberiusKirk/todoist/internal/api/healthcheck"
-	"github.com/JamesTiberiusKirk/todoist/internal/middleware"
-	"github.com/JamesTiberiusKirk/todoist/internal/web/db"
-	"github.com/JamesTiberiusKirk/todoist/internal/web/index"
-	"github.com/JamesTiberiusKirk/todoist/internal/web/notfound"
-	"github.com/JamesTiberiusKirk/todoist/internal/web/todos"
-	"github.com/a-h/templ"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/api/healthcheck"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/db"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/middleware"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/web/index"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/web/notifications"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/web/todos"
 	"github.com/alexedwards/scs/v2"
+	"github.com/rickb777/servefiles/v3"
 )
 
 func main() {
@@ -26,10 +26,15 @@ func main() {
 
 	serverMux := http.NewServeMux()
 
-	serverMux.Handle("/", index.NewHandler(sessionManager))
-	serverMux.Handle("/todos", todos.NewHandler(logger, db, sessionManager))
+	nh := notifications.NewNotificationsHandler(logger, sessionManager)
+	serverMux.HandleFunc("/notifications", nh.ServeSSE)
 
-	serverMux.Handle("/404", templ.Handler(notfound.PageNotFound(), templ.WithStatus(http.StatusNotFound)))
+	serverMux.Handle("/{$}", index.NewHandler(sessionManager))
+
+	assets := servefiles.NewAssetHandler("./assets/").WithMaxAge(time.Hour)
+	serverMux.Handle("/assets/", http.StripPrefix("/assets/", assets))
+
+	serverMux.Handle("/todos", todos.NewHandler(logger, db, sessionManager, nh))
 	serverMux.Handle("/api/healthcheck", healthcheck.NewHandler())
 
 	loggedServer := middleware.Logger(logger, serverMux)

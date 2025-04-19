@@ -11,6 +11,12 @@ type customLoggerWriter struct {
 	statusCode int
 }
 
+func (c *customLoggerWriter) Flush() {
+	if flusher, ok := c.w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 func (c *customLoggerWriter) Header() http.Header {
 	return c.w.Header()
 }

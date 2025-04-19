@@ -16,7 +16,7 @@ func (s Status) String() string {
 	return string(s)
 }
 
-type Todos struct {
+type Ticket struct {
 	Id            string
 	Title         string
 	Description   string

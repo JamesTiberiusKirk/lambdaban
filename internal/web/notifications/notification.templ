@@ -1,0 +1,16 @@
+package notifications
+
+templ notification(notif Notification) {
+	<div class="cs-panel notification" style={ "padding:15px;", getTypeStyles(notif) } x-init="setTimeout(()=>{$el.remove()}, 5000)">
+		<button class="cs-btn close" type="button" x-on:click="$el.parentNode.remove()"></button>
+		{ notif.Content }
+	</div>
+}
+
+func getTypeStyles(notif Notification) string {
+	switch notif.Type {
+	case "Error":
+		return "color: red;"
+	}
+	return ""
+}
