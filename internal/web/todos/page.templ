@@ -10,12 +10,19 @@ func getBoardSwapAttribs() templ.Attributes {
 	return templ.Attributes{
 		"hx-target": "#board_form",
 		"hx-select": "#board_form",
-		"hx-swap":"outerHTML",
+		"hx-swap":   "outerHTML",
 	}
 }
 
 templ page(r *http.Request, userId string, todos, inProgress, done []models.Ticket) {
 	@comoponents.Layout(r) {
+		<div
+			class="notifications"
+			hx-swap="beforeend scroll:bottom"
+			hx-ext="sse"
+			sse-connect="/notifications"
+			sse-swap="notification"
+		></div>
 		@addTicketDialogue()
 		@confirmationDialogue()
 		<form

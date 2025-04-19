@@ -49,7 +49,7 @@ func (h *NotificationsHandler) ServeSSE(w http.ResponseWriter, r *http.Request) 
 	userID := h.sm.GetString(r.Context(), "user")
 	if userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		h.log.Error("Unauthorized")
+		h.log.Error("SSE Unauthorized")
 		return
 	}
 

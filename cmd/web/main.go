@@ -22,7 +22,7 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 
-	db := db.NewInMemClient()
+	db := db.NewInMemClient(logger)
 
 	serverMux := http.NewServeMux()
 
@@ -30,6 +30,10 @@ func main() {
 	serverMux.HandleFunc("/notifications", nh.ServeSSE)
 
 	serverMux.Handle("/{$}", index.NewHandler(sessionManager))
+
+	serverMux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "assets/lambda.ico")
+	})
 
 	assets := servefiles.NewAssetHandler("./assets/").WithMaxAge(time.Hour)
 	serverMux.Handle("/assets/", http.StripPrefix("/assets/", assets))

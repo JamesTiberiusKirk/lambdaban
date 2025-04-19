@@ -2,7 +2,9 @@ package db
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
@@ -10,85 +12,80 @@ import (
 )
 
 var (
-	defaultTickets = []models.Ticket{
-		{
-			Id:            uuid.New().String(),
-			Title:         "Test 1",
-			Description:   "this is a test Description",
-			CreatedAt:     time.Now(),
-			LastUpdatedAt: time.Now(),
-			Status:        "todo",
-		},
-		{
-			Id:            uuid.New().String(),
-			Title:         "Test 2",
-			Description:   "this is a test Description",
-			CreatedAt:     time.Now(),
-			LastUpdatedAt: time.Now(),
-			Status:        "todo",
-		},
-		{
-			Id:            uuid.New().String(),
-			Title:         "Test 3",
-			Description:   "this is a test Description",
-			CreatedAt:     time.Now(),
-			LastUpdatedAt: time.Now(),
-			Status:        "todo",
-		},
-		{
-			Id:            uuid.New().String(),
-			Title:         "Test 4",
-			Description:   "this is a test Description",
-			CreatedAt:     time.Now(),
-			LastUpdatedAt: time.Now(),
-			Status:        "todo",
-		},
-		{
-			Id:            uuid.New().String(),
-			Title:         "Test 5",
-			Description:   "this is a test Description",
-			CreatedAt:     time.Now(),
-			LastUpdatedAt: time.Now(),
-			Status:        "todo",
-		},
-	}
+	state   globalState
+	stateMu sync.RWMutex
+	ttl     = 2 * time.Minute
 )
 
-type globalState struct {
-	tickets map[string][]models.Ticket
+type user struct {
+	tickets     []models.Ticket
+	lastUpdated time.Time
 }
 
-var state globalState
+type globalState struct {
+	users map[string]user
+}
 
 type InMemClient struct {
+	log *slog.Logger
 }
 
-func NewInMemClient() *InMemClient {
+func NewInMemClient(log *slog.Logger) *InMemClient {
+	stateMu.Lock()
 	state = globalState{
-		tickets: map[string][]models.Ticket{},
+		users: map[string]user{},
 	}
-	return &InMemClient{}
+	stateMu.Unlock()
+	return &InMemClient{
+		log: log,
+	}
 }
 
 var (
 	ErrUserNotFound = fmt.Errorf("user not found")
 )
 
+func (db *InMemClient) InitTTLCleanup() {
+	db.log.Info("Initialised TTL cleanup", "TTL", ttl)
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for {
+			<-ticker.C
+			now := time.Now()
+			stateMu.Lock()
+			for id, u := range state.users {
+				if now.Sub(u.lastUpdated) > ttl {
+					db.log.Info("Cleaned up user", "userId", id)
+					delete(state.users, id)
+				}
+			}
+			stateMu.Unlock()
+		}
+	}()
+}
+
 func (db *InMemClient) CreateUser() string {
 	newId := uuid.New().String()
-
-	state.tickets[newId] = defaultTickets
-
+	stateMu.Lock()
+	state.users[newId] = user{
+		tickets:     defaultTickets,
+		lastUpdated: time.Now(),
+	}
+	stateMu.Unlock()
 	return newId
 }
+
 func (db *InMemClient) GetAllByUserSplitByStatus(id string) (todo []models.Ticket, inProgress []models.Ticket, done []models.Ticket, err error) {
-	ts, ok := state.tickets[id]
+	stateMu.RLock()
+	user, ok := state.users[id]
+	stateMu.RUnlock()
 	if !ok {
 		err = ErrUserNotFound
 		return
 	}
 
-	for _, t := range ts {
+	for _, t := range user.tickets {
 		switch t.Status {
 		case models.StatusTodo:
 			todo = append(todo, t)
@@ -103,40 +100,52 @@ func (db *InMemClient) GetAllByUserSplitByStatus(id string) (todo []models.Ticke
 }
 
 func (db *InMemClient) GetAllByUser(id string) ([]models.Ticket, error) {
-	todos, ok := state.tickets[id]
+	stateMu.RLock()
+	users, ok := state.users[id]
+	stateMu.RUnlock()
 	if !ok {
 		return nil, ErrUserNotFound
 	}
 
-	return todos, nil
+	return users.tickets, nil
 }
 
-func (db *InMemClient) AddToUser(id string, todo models.Ticket) error {
-	_, ok := state.tickets[id]
-	if !ok {
-		state.tickets[id] = []models.Ticket{}
-	}
-
-	state.tickets[id] = append(state.tickets[id], todo)
-	return nil
-}
-
-func (db *InMemClient) DeleteUserByID(id string) error {
-	delete(state.tickets, id)
-	return nil
-}
-
-func (db *InMemClient) DeleteTodoByUserAndTodoId(userId, todoId string) error {
-	found := -1
-
-	todos, ok := state.tickets[userId]
+func (db *InMemClient) AddToUser(id string, ticket models.Ticket) error {
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	u, ok := state.users[id]
 	if !ok {
 		return ErrUserNotFound
 	}
 
-	for i, todo := range todos {
+	u.tickets = append(u.tickets, ticket)
+	u.lastUpdated = time.Now()
+	state.users[id] = u
+
+	return nil
+}
+
+func (db *InMemClient) DeleteUserByID(id string) error {
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	delete(state.users, id)
+	return nil
+}
+
+func (db *InMemClient) DeleteTodoByUserAndTodoId(userId, todoId string) error {
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	found := -1
+
+	u, ok := state.users[userId]
+	if !ok {
+		return ErrUserNotFound
+	}
+
+	for i, todo := range u.tickets {
 		if todo.Id == todoId {
 			found = i
+			break
 		}
 	}
 
@@ -144,11 +153,24 @@ func (db *InMemClient) DeleteTodoByUserAndTodoId(userId, todoId string) error {
 		return fmt.Errorf("element not found")
 	}
 
-	state.tickets[userId] = slices.Delete(todos, found, found+1)
+	u.tickets = slices.Delete(u.tickets, found, found+1)
+	u.lastUpdated = time.Now()
+	state.users[userId] = u
+
 	return nil
 }
 
 func (db *InMemClient) UpdateUser(userId string, tickets []models.Ticket) error {
-	state.tickets[userId] = tickets
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	u, ok := state.users[userId]
+	if !ok {
+		return ErrUserNotFound
+	}
+
+	u.tickets = tickets
+	u.lastUpdated = time.Now()
+	state.users[userId] = u
+
 	return nil
 }

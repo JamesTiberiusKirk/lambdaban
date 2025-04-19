@@ -17,15 +17,8 @@ templ Layout(r *http.Request) {
 			<script src="https://unpkg.com/alpinejs" defer></script>
 		</head>
 		<body>
-			<div
-				class="notifications"
-				hx-swap="beforeend scroll:bottom"
-				hx-ext="sse"
-				sse-connect="/notifications"
-				sse-swap="notification"
-			></div>
 			<div class="layout">
-				<div style="display: flex; ">
+				<div style="display: flex;">
 					<img
 						style="margin-top: auto; margin-bottom: auto;"
 						src="/assets/lambda.png"
