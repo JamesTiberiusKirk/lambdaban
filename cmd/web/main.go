@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/JamesTiberiusKirk/lambdaban/internal/api/healthcheck"
@@ -16,6 +17,11 @@ import (
 )
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
 	logger := slog.Default()
 
 	// Initialize the session.
@@ -45,9 +51,9 @@ func main() {
 
 	sessionedServer := sessionManager.LoadAndSave(loggedServer)
 
-	logger.Info("HTTP server listening", "port", "3000")
+	logger.Info("HTTP server listening", "port", port)
 
-	if err := http.ListenAndServe(":3000", sessionedServer); err != nil {
+	if err := http.ListenAndServe(":"+port, sessionedServer); err != nil {
 		logger.Error("failed to start server: ", "error", err)
 		return
 	}

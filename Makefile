@@ -3,3 +3,6 @@ dev:
 
 png-to-ico:
 	magick -gravity center ./assets/lambda.png -flatten -colors 256 -background transparent ./assets/lambda.ico
+
+docker-build:
+	docker buildx build -t lambdaban -f ./cmd/web/Dockerfile .
