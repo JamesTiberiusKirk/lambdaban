@@ -48,9 +48,9 @@ services:
       - "traefik.http.routers.lambdaban.tls.certresolver=myresolver"
       - "traefik.http.services.lambdaban.loadbalancer.server.port=8080"
     environment:
-      PORT: 8080
+      PORT: 3001
     expose:
-      - "8080"
+      - "3001"
     restart: always
 
   prometheus:
