@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/JamesTiberiusKirk/lambdaban/internal/metrics"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
 	"github.com/google/uuid"
 )
@@ -14,7 +15,7 @@ import (
 var (
 	state   globalState
 	stateMu sync.RWMutex
-	ttl     = 2 * time.Minute
+	ttl     = 1 * time.Hour
 )
 
 type user struct {
@@ -28,16 +29,19 @@ type globalState struct {
 
 type InMemClient struct {
 	log *slog.Logger
+	m   *metrics.Metrics
 }
 
-func NewInMemClient(log *slog.Logger) *InMemClient {
+func NewInMemClient(log *slog.Logger, m *metrics.Metrics) *InMemClient {
 	stateMu.Lock()
 	state = globalState{
 		users: map[string]user{},
 	}
 	stateMu.Unlock()
+
 	return &InMemClient{
 		log: log,
+		m:   m,
 	}
 }
 
@@ -58,6 +62,7 @@ func (db *InMemClient) InitTTLCleanup() {
 				if now.Sub(u.lastUpdated) > ttl {
 					db.log.Info("Cleaned up user", "userId", id)
 					delete(state.users, id)
+					db.m.ActiveUsers.Sub(1)
 				}
 			}
 			stateMu.Unlock()
@@ -72,6 +77,7 @@ func (db *InMemClient) CreateUser() string {
 		tickets:     defaultTickets,
 		lastUpdated: time.Now(),
 	}
+	db.m.ActiveUsers.Add(1)
 	stateMu.Unlock()
 	return newId
 }
@@ -129,6 +135,7 @@ func (db *InMemClient) DeleteUserByID(id string) error {
 	stateMu.Lock()
 	defer stateMu.Unlock()
 	delete(state.users, id)
+	db.m.ActiveUsers.Sub(1)
 	return nil
 }
 

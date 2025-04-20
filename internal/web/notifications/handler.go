@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/JamesTiberiusKirk/lambdaban/internal/metrics"
 	"github.com/alexedwards/scs/v2"
 )
 
@@ -25,15 +26,17 @@ type SSEConnection struct {
 // NotificationsHandler manages all SSE connections
 type NotificationsHandler struct {
 	log     *slog.Logger
+	m       *metrics.Metrics
 	mu      sync.RWMutex
 	clients map[string]*SSEConnection // userID -> connection
 	sm      *scs.SessionManager
 }
 
 // NewNotificationsHandler creates a new handler
-func NewNotificationsHandler(log *slog.Logger, sm *scs.SessionManager) *NotificationsHandler {
+func NewNotificationsHandler(log *slog.Logger, m *metrics.Metrics, sm *scs.SessionManager) *NotificationsHandler {
 	return &NotificationsHandler{
 		log:     log,
+		m:       m,
 		clients: make(map[string]*SSEConnection),
 		sm:      sm,
 	}
@@ -70,6 +73,7 @@ func (h *NotificationsHandler) ServeSSE(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	h.m.SSENotificationConnections.Add(1)
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -84,6 +88,7 @@ func (h *NotificationsHandler) ServeSSE(w http.ResponseWriter, r *http.Request) 
 		delete(h.clients, userID)
 		h.mu.Unlock()
 		close(conn.NotifyCh)
+		h.m.SSENotificationConnections.Sub(1)
 	}()
 
 	ctx := r.Context()

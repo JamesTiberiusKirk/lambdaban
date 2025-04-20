@@ -91,12 +91,13 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	w.WriteHeader(http.StatusOK)
 	component := page(r, userId, todo, inProgrss, done)
 	component.Render(r.Context(), w)
 }
 
 func (h *handler) post(w http.ResponseWriter, r *http.Request) {
-	// defer h.get(w, r)
+	defer h.get(w, r)
 
 	userId := h.sm.GetString(r.Context(), "user")
 	if userId == "" {
@@ -135,8 +136,6 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 		Type:    "Info",
 		Content: fmt.Sprintf("Added ticket %s", newTodo.Id),
 	})
-
-	h.get(w, r)
 }
 
 func (h *handler) put(w http.ResponseWriter, r *http.Request) {
