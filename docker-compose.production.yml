@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.0.0
+    image: traefik:latest
     command:
       - "--api.dashboard=true"
       - "--api.insecure=false"
@@ -54,7 +54,7 @@ services:
     restart: always
 
   prometheus:
-    image: prom/prometheus:v2.52.0
+    image: prom/prometheus:latest
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -76,7 +76,7 @@ services:
     restart: always
 
   grafana:
-    image: grafana/grafana:10.3.1
+    image: grafana/grafana:latest
     volumes:
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - grafana_data:/var/lib/grafana
