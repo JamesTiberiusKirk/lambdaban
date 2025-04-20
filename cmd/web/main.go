@@ -20,10 +20,6 @@ import (
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3030"
-	}
 
 	logger := slog.Default()
 
@@ -38,8 +34,6 @@ func main() {
 	db.InitTTLCleanup()
 
 	serverMux := http.NewServeMux()
-
-	serverMux.Handle("/metrics", promhttp.HandlerFor(promReg, promhttp.HandlerOpts{}))
 
 	nh := notifications.NewNotificationsHandler(logger, m, sessionManager)
 	serverMux.HandleFunc("/notifications", nh.ServeSSE)
@@ -61,8 +55,21 @@ func main() {
 
 	sessionedServer := sessionManager.LoadAndSave(loggedServer)
 
-	logger.Info("HTTP server listening", "port", port)
+	metricsPort := os.Getenv("METRICS_PORT")
+	if metricsPort == "" {
+		metricsPort = "3031"
+	}
 
+	// Serve metrics.
+	logger.Info("serving metrics at:", "metrics_port", metricsPort)
+	go http.ListenAndServe(":"+metricsPort, promhttp.HandlerFor(promReg, promhttp.HandlerOpts{}))
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3030"
+	}
+
+	logger.Info("HTTP server listening", "port", port)
 	if err := http.ListenAndServe(":"+port, sessionedServer); err != nil {
 		logger.Error("failed to start server: ", "error", err)
 		return

@@ -31,8 +31,10 @@ services:
       - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
     environment:
       PORT: 3001 
+      METRICS_PORT: 3002
     expose:
       - "3001"
+      - "3002"
 
   prometheus:
     image: prom/prometheus:latest
