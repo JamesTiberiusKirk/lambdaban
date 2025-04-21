@@ -1,21 +1,20 @@
 services:
 
   lambdaban:
-    build:
-      context: .
-      dockerfile: ./cmd/web/Dockerfile
+    image:  ghcr.io/jamestiberiuskirk/lambdaban:master
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.vulpe.dev`)"
       - "traefik.http.routers.lambdaban.entrypoints=web"
-      # Uncomment for HTTPS
       - "traefik.http.routers.lambdaban.entrypoints=websecure"
       - "traefik.http.routers.lambdaban.tls.certresolver=myresolver"
       - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       PORT: 3001
-    expose:
-      - "3001"
+    deploy:
+      mode: replicated
+      replicas: 3
     restart: always
 
   watchtower:
