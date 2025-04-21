@@ -1,0 +1,59 @@
+name: Build and push
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  packages: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Install dependencies
+        run: go get .
+      - name: Build
+        run: go build -v ./...
+      - name: Get templ version
+        id: templ-version
+        run: |
+          echo "VERSION=$(go list -m -f '{{.Version}}' github.com/a-h/templ)" >> $GITHUB_OUTPUT
+      - name: Build templates
+        run: go run github.com/a-h/templ/cmd/templ@${{ steps.templ-version.outputs.VERSION }} generate --include-version=false
+      - name: Assert generated templates match committed
+        run: |
+          git add -A
+          git diff --exit-code
+      - name: Test with the Go CLI
+        run: go test ./...
+
+  build-and-push-image:
+    needs:
+      - build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@latest
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@latest
+        with:
+          file: ./cmd/web/Dockerfile
+          context: .
+          push: true
+          tags: ghcr.io/JamesTiberiusKirk/lambdaban:prod
