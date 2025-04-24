@@ -29,8 +29,8 @@ services:
     depends_on:
       migrator:
         condition: service_completed_successfully
-    ports:
-      - 3001:3001
+    expose:
+      - "3001" 
 
   migrator:
     image:  ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
@@ -124,6 +124,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.lambdaban.vulpe.dev`)"
       - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.services.lambdaban.loadbalancer.sticky=true"
+      - "traefik.http.services.lambdaban.loadbalancer.sticky.cookie.name=sticky_lambdaban"
       # Uncomment for HTTPS
       - "traefik.http.routers.prometheus.entrypoints=websecure"
       - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
