@@ -37,7 +37,6 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment: 
-      TEST_DATA: true
       DB_NAME: ${DB_NAME} 
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}

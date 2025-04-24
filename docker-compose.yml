@@ -46,7 +46,6 @@ services:
     build:
       dockerfile: ./cmd/migrator/Dockerfile
     environment: 
-      TEST_DATA: true
       DB_NAME: ${DB_NAME} 
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
