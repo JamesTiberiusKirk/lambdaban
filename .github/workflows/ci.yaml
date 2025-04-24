@@ -7,6 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  # Hardcode lowercase
+  IMAGE_BASE: jamestiberiuskirk/lambdaban
 
 permissions:
   contents: read
@@ -71,7 +73,6 @@ jobs:
   build-and-push:
     needs: [build-and-test, detect-changes]
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -80,11 +81,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Determine lowercase image name
-        id: lc
-        run: |
-          echo "IMAGE_NAME=$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
@@ -97,7 +93,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.lc.outputs.IMAGE_NAME }}
+          # Use the base repo; metadata-action will derive tags for us
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.service }}
 
       - name: Build & push ${{ matrix.service }} image
         if: >
@@ -109,8 +106,9 @@ jobs:
           context: .
           file: ./cmd/${{ matrix.service }}/Dockerfile
           push: true
+          # Embed service name into repo, tag just "master"
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.lc.outputs.IMAGE_NAME }}:${{ matrix.service }}-master
+            ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.service }}:master
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Generate artifact attestation for ${{ matrix.service }}
@@ -119,6 +117,6 @@ jobs:
           needs.detect-changes.outputs.migrator_changed == 'true'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ steps.lc.outputs.IMAGE_NAME }}:${{ matrix.service }}-master
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.service }}:master
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
