@@ -1,7 +1,7 @@
 services:
 
   lambdaban:
-    image:  ghcr.io/jamestiberiuskirk/lambdaban:master
+    image:  ghcr.io/jamestiberiuskirk/lambdaban-web:master
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.vulpe.dev`)"
@@ -26,6 +26,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+
+  migrator:
+    image:  ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    environment: 
+      TEST_DATA: true
+      DB_NAME: ${DB_NAME} 
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_HOST: db:5432
+      DB_DISABLE_SSL: true
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
 
   db:
     image: 'postgres:latest'
@@ -42,7 +61,6 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - ./.db-mount:/var/lib/postgresql/data/
-
 
   watchtower:
     image: containrrr/watchtower
