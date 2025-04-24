@@ -22,6 +22,9 @@ services:
       mode: replicated
       replicas: 3
     restart: always
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
 
   db:
     image: 'postgres:latest'
@@ -38,6 +41,21 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - ./.docker-volumes/db:/var/lib/postgresql/data/
+
+  migrator:
+    build:
+      dockerfile: ./cmd/migrator/Dockerfile
+    environment: 
+      TEST_DATA: true
+      DB_NAME: ${DB_NAME} 
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_HOST: db:5432
+      DB_DISABLE_SSL: true
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
 
   traefik:
     image: traefik:v3.0
