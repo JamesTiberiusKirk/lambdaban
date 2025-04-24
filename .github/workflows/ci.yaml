@@ -63,12 +63,11 @@ jobs:
   build-and-push:
     needs: [build-and-test, detect-changes]
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         service: [web, migrator]
-    fail-fast: false
-    # only run migrator slice if migrator folder changed
-    if: ${{ matrix.service == 'web' || needs.detect-changes.outputs.migrator_changed == 'true' }}
 
     steps:
       - name: Checkout repository
@@ -88,18 +87,23 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build & push Docker image
+        if: >
+          matrix.service == 'web' ||
+          needs.detect-changes.outputs.migrator_changed == 'true'
         id: push
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./cmd/${{ matrix.service }}/Dockerfile
           push: true
-          # single colon: repo:lambdaban, tag=[service]-master
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.service }}-master
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Generate artifact attestation
+        if: >
+          matrix.service == 'web' ||
+          needs.detect-changes.outputs.migrator_changed == 'true'
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.service }}-master
