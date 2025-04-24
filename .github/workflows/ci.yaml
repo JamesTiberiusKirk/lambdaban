@@ -7,8 +7,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Hardcode lowercase
-  IMAGE_BASE: jamestiberiuskirk/lambdaban
+  # Hard-coded, all lowercase
+  IMAGE_WEB: jamestiberiuskirk/lambdaban-web
+  IMAGE_MIGRATOR: jamestiberiuskirk/lambdaban-migrator
 
 permissions:
   contents: read
@@ -89,12 +90,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract image metadata (tags & labels)
+      - name: Extract metadata for ${{ matrix.service }}
         id: meta
         uses: docker/metadata-action@v4
         with:
-          # Use the base repo; metadata-action will derive tags for us
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.service }}
+          # Point directly at the full repo name for each service
+          images: >
+            ${{ env.REGISTRY }}/${{ matrix.service == 'web' && env.IMAGE_WEB || env.IMAGE_MIGRATOR }}
 
       - name: Build & push ${{ matrix.service }} image
         if: >
@@ -106,9 +108,7 @@ jobs:
           context: .
           file: ./cmd/${{ matrix.service }}/Dockerfile
           push: true
-          # Embed service name into repo, tag just "master"
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.service }}:master
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Generate artifact attestation for ${{ matrix.service }}
@@ -117,6 +117,6 @@ jobs:
           needs.detect-changes.outputs.migrator_changed == 'true'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.service }}:master
+          subject-name: ${{ steps.meta.outputs.tags }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
