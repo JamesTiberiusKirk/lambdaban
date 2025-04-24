@@ -148,8 +148,8 @@ services:
 
 volumes:
   prometheus_data:
-    grafana_data:
+  grafana_data:
 
-      networks:
-        default:
-          name: traefik
+networks:
+  default:
+    name: traefik
