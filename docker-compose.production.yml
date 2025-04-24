@@ -1,7 +1,7 @@
 services:
 
   lambdaban:
-    image:  ghcr.io/jamestiberiuskirk/lambdaban-web:master
+    image: ghcr.io/jamestiberiuskirk/lambdaban-web:master
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.vulpe.dev`)"
@@ -31,9 +31,10 @@ services:
         condition: service_completed_successfully
     expose:
       - "3001" 
+      - "3002" 
 
   migrator:
-    image:  ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
+    image: ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment: 
@@ -54,8 +55,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # ports:
-    #   - 5432:5432
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
@@ -81,30 +80,25 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
-      # Uncomment for HTTPS (and add certs):
       - "--entryPoints.websecure.address=:443"
       - "--metrics.prometheus=true"
       - "--metrics.prometheus.addEntryPointsLabels=true"
       - "--metrics.prometheus.addServicesLabels=true"
-      # Uncomment and configure for production SSL:
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=dumitru.v.dv@gmail.com"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
-      - "443:443" # Uncomment for HTTPS
-      # Dashboard only accessible from internal network
-      # - "127.0.0.1:8080:8080"
+      - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt" # Uncomment for HTTPS certs
+      - "./letsencrypt:/letsencrypt"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.lambdaban.vulpe.dev`)"
       - "traefik.http.routers.traefik.entrypoints=web"
       - "traefik.http.routers.traefik.service=api@internal"
-      # Uncomment for HTTPS
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=myresolver"
     restart: always
@@ -114,7 +108,6 @@ services:
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    # Don't expose Prometheus to public internet
     ports:
       - "9090:9090"
     command:
@@ -123,9 +116,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.lambdaban.vulpe.dev`)"
       - "traefik.http.routers.prometheus.entrypoints=web"
-      - "traefik.http.services.lambdaban.loadbalancer.sticky=true"
-      - "traefik.http.services.lambdaban.loadbalancer.sticky.cookie.name=sticky_lambdaban"
-      # Uncomment for HTTPS
       - "traefik.http.routers.prometheus.entrypoints=websecure"
       - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
@@ -140,14 +130,12 @@ services:
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
-    # Don't expose Grafana to public internet
     ports:
       - "3000:3000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.lambdaban.vulpe.dev`)"
       - "traefik.http.routers.grafana.entrypoints=web"
-      # Uncomment for HTTPS
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls.certresolver=myresolver"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
