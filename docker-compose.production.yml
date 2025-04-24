@@ -29,6 +29,8 @@ services:
     depends_on:
       migrator:
         condition: service_completed_successfully
+    port:
+      - 3001:3001
 
   migrator:
     image:  ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
@@ -45,7 +47,7 @@ services:
       db:
         condition: service_healthy
         restart: true
-
+        
   db:
     image: 'postgres:latest'
     healthcheck:
@@ -114,8 +116,8 @@ services:
       - prometheus_data:/prometheus
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     # Don't expose Prometheus to public internet
-    # ports:
-    #   - "9090:9090"
+    ports:
+      - "9090:9090"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     labels:
@@ -138,8 +140,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     # Don't expose Grafana to public internet
-    # ports:
-    #   - "3000:3000"
+    ports:
+      - "3000:3000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.lambdaban.vulpe.dev`)"
