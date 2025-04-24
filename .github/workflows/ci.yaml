@@ -1,4 +1,4 @@
-name: Build, Test & Push
+name: CI – Build, Test & Push
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }} | tr '[:upper:]' '[:lower:]'
 
 permissions:
   contents: read
@@ -19,26 +18,34 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
+
       - name: Install dependencies
         run: go get ./...
+
       - name: Build
         run: go build -v ./...
+
       - name: Get templ version
         id: templ-version
         run: |
           echo "VERSION=$(go list -m -f '{{.Version}}' github.com/a-h/templ)" >> $GITHUB_OUTPUT
-      - name: Build templates
+
+      - name: Generate templates
         run: go run github.com/a-h/templ/cmd/templ@${{ steps.templ-version.outputs.VERSION }} generate --include-version=false
+
       - name: Assert generated templates match committed
         run: |
           git add -A
           git diff --exit-code
-      - name: Test with the Go CLI
+
+      - name: Test with Go
         run: go test ./...
 
   detect-changes:
@@ -46,7 +53,8 @@ jobs:
     outputs:
       migrator_changed: ${{ steps.filter.outputs.migrator }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
@@ -55,10 +63,10 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            migrator:
-              - 'cmd/migrator/**'
             web:
               - 'cmd/web/**'
+            migrator:
+              - 'cmd/migrator/**'
 
   build-and-push:
     needs: [build-and-test, detect-changes]
@@ -70,23 +78,28 @@ jobs:
         service: [web, migrator]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
+      - name: Determine lowercase image name
+        id: lc
+        run: |
+          echo "IMAGE_NAME=$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Extract image metadata (tags & labels)
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.lc.outputs.IMAGE_NAME }}
 
-      - name: Build & push Docker image
+      - name: Build & push ${{ matrix.service }} image
         if: >
           matrix.service == 'web' ||
           needs.detect-changes.outputs.migrator_changed == 'true'
@@ -97,15 +110,15 @@ jobs:
           file: ./cmd/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.service }}-master
+            ${{ env.REGISTRY }}/${{ steps.lc.outputs.IMAGE_NAME }}:${{ matrix.service }}-master
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Generate artifact attestation
+      - name: Generate artifact attestation for ${{ matrix.service }}
         if: >
           matrix.service == 'web' ||
           needs.detect-changes.outputs.migrator_changed == 'true'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.service }}-master
+          subject-name: ${{ env.REGISTRY }}/${{ steps.lc.outputs.IMAGE_NAME }}:${{ matrix.service }}-master
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
