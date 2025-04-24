@@ -1,7 +1,7 @@
 package todos
 
 import (
-	"github.com/JamesTiberiusKirk/lambdaban/internal/comoponents"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/components"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
 	"net/http"
 )
@@ -15,7 +15,7 @@ func getBoardSwapAttribs() templ.Attributes {
 }
 
 templ page(r *http.Request, userId string, todos, inProgress, done []models.Ticket) {
-	@comoponents.Layout(r) {
+	@components.Layout(r) {
 		<div
 			class="notifications"
 			hx-swap="beforeend scroll:bottom"
@@ -200,6 +200,7 @@ css boardForm() {
 }
 
 css board() {
+	min-height: 98%; 
 	display: flex;
 	flex-direction: row;
 }
@@ -211,6 +212,7 @@ css divider() {
 
 css col() {
 	width: 33%; 
+	min-height: 100%; 
 	padding: 10px;
 }
 

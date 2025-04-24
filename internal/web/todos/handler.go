@@ -1,12 +1,13 @@
 package todos
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/JamesTiberiusKirk/lambdaban/internal/db"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/components"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/util"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/web/notifications"
@@ -14,7 +15,18 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewHandler(log *slog.Logger, db *db.InMemClient, sm *scs.SessionManager, nh *notifications.NotificationsHandler) http.Handler {
+type dbClient interface {
+	AddToUser(ctx context.Context, id string, ticket models.Ticket) error
+	CreateUser(ctx context.Context) (string, error)
+	DeleteTodoByUserAndTodoId(ctx context.Context, userId string, todoId string) error
+	// DeleteUserByID(ctx context.Context, id string) error
+	GetAllByUser(ctx context.Context, id string) ([]models.Ticket, error)
+	GetAllByUserSplitByStatus(ctx context.Context, id string) (todo []models.Ticket, inProgress []models.Ticket, done []models.Ticket, err error)
+	// InitTTLCleanup(ctx context.Context, interval time.Duration, olderThan time.Duration)
+	UpdateUser(ctx context.Context, userId string, tickets []models.Ticket) error
+}
+
+func NewHandler(log *slog.Logger, db dbClient, sm *scs.SessionManager, nh *notifications.NotificationsHandler) http.Handler {
 	return &handler{
 		log: log,
 		db:  db,
@@ -25,7 +37,7 @@ func NewHandler(log *slog.Logger, db *db.InMemClient, sm *scs.SessionManager, nh
 
 type handler struct {
 	log *slog.Logger
-	db  *db.InMemClient
+	db  dbClient
 	sm  *scs.SessionManager
 	nh  *notifications.NotificationsHandler
 }
@@ -58,7 +70,7 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 
 	h.log.Info("deleting", "userid", userId, "todoId", todoId)
 
-	err := h.db.DeleteTodoByUserAndTodoId(userId, todoId)
+	err := h.db.DeleteTodoByUserAndTodoId(r.Context(), userId, todoId)
 	if err != nil {
 		h.log.Error("Error deleting todo ", "userId", userId, "todoId", todoId, "err", err.Error())
 	}
@@ -74,7 +86,14 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	userId := h.sm.GetString(r.Context(), "user")
 	if userId == "" {
-		userId = h.db.CreateUser()
+		userId, err := h.db.CreateUser(r.Context())
+		if err != nil {
+			h.log.Error("Unable to create user", "error", err)
+			component := components.ServerError(r, "Unable to create user")
+			component.Render(r.Context(), w)
+			return
+		}
+
 		h.sm.Put(r.Context(), "user", userId)
 		h.nh.Notify(userId, notifications.Notification{
 			Type:    "Info",
@@ -82,7 +101,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	todo, inProgrss, done, err := h.db.GetAllByUserSplitByStatus(userId)
+	todo, inProgrss, done, err := h.db.GetAllByUserSplitByStatus(r.Context(), userId)
 	if err != nil {
 		r = util.AddUiMessageToRequest(r, util.MessageTypeError, "Error fetching tickets")
 		h.nh.Notify(userId, notifications.Notification{
@@ -120,7 +139,7 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 	newTodo.LastUpdatedAt = time.Now()
 	newTodo.Id = uuid.NewString()
 
-	err := h.db.AddToUser(userId, newTodo)
+	err := h.db.AddToUser(r.Context(), userId, newTodo)
 	if err != nil {
 		h.log.Error("Error adding tickets", "error", err.Error())
 		h.nh.Notify(userId, notifications.Notification{
@@ -162,7 +181,7 @@ func (h *handler) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentTickets, err := h.db.GetAllByUser(userId)
+	currentTickets, err := h.db.GetAllByUser(r.Context(), userId)
 	if err != nil {
 		h.log.Error("error getting all user tickets", "error", err.Error())
 		r = util.AddUiMessageToRequest(r, util.MessageTypeError, "Error fetching tickets")
@@ -190,7 +209,7 @@ func (h *handler) put(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = h.db.UpdateUser(userId, updatedTickets)
+	err = h.db.UpdateUser(r.Context(), userId, updatedTickets)
 	if err != nil {
 		h.log.Error("error updating tickets", "error", err.Error())
 		return

@@ -1,5 +1,10 @@
 package notfound
 
-templ PageNotFound() {
-	<div>404 - Not found</div>
+import "github.com/JamesTiberiusKirk/lambdaban/internal/components"
+import "net/http"
+
+templ PageNotFound(r *http.Request) {
+	@components.Layout(r){
+		<div>404 - Not found</div>
+	}
 }

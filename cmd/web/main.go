@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/JamesTiberiusKirk/lambdaban/internal/api/healthcheck"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/config"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/db"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/metrics"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/middleware"
@@ -20,6 +22,7 @@ import (
 )
 
 func main() {
+	config := config.GetConfig()
 
 	logger := slog.Default()
 
@@ -30,8 +33,16 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 
-	db := db.NewInMemClient(logger, m)
-	db.InitTTLCleanup()
+	db, err := db.InitClient(logger, m,
+		config.DbUser, config.DbPass, config.DbHost, config.DbName,
+		true, time.Now)
+	if err != nil {
+		panic("error connecting to db " + err.Error())
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	db.InitTTLCleanup(ctx, 10*time.Minute, 2*time.Hour)
 
 	serverMux := http.NewServeMux()
 

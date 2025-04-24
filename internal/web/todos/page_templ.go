@@ -8,7 +8,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/JamesTiberiusKirk/lambdaban/internal/comoponents"
+	"github.com/JamesTiberiusKirk/lambdaban/internal/components"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
 	"net/http"
 )
@@ -294,7 +294,7 @@ func page(r *http.Request, userId string, todos, inProgress, done []models.Ticke
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = comoponents.Layout(r).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Layout(r).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -734,7 +734,8 @@ func boardForm() templ.CSSClass {
 
 func board() templ.CSSClass {
 	templ_7745c5c3_CSSBuilder := templruntime.GetBuilder()
-	templ_7745c5c3_CSSBuilder.WriteString(`display:flex;`)
+	templ_7745c5c3_CSSBuilder.WriteString(`min-height:98%; 
+	display: flex;`)
 	templ_7745c5c3_CSSBuilder.WriteString(`flex-direction:row;`)
 	templ_7745c5c3_CSSID := templ.CSSID(`board`, templ_7745c5c3_CSSBuilder.String())
 	return templ.ComponentCSSClass{
@@ -757,6 +758,7 @@ func divider() templ.CSSClass {
 func col() templ.CSSClass {
 	templ_7745c5c3_CSSBuilder := templruntime.GetBuilder()
 	templ_7745c5c3_CSSBuilder.WriteString(`width:33%; 
+	min-height: 100%; 
 	padding: 10px;`)
 	templ_7745c5c3_CSSID := templ.CSSID(`col`, templ_7745c5c3_CSSBuilder.String())
 	return templ.ComponentCSSClass{

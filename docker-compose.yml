@@ -1,4 +1,44 @@
 services:
+  lambdaban:
+    build:
+      context: .
+      dockerfile: ./cmd/web/Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.localhost`)"
+      - "traefik.http.routers.lambdaban.entrypoints=web"
+      - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
+    environment:
+      PORT: 3001
+      METRICS_PORT: 3002
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
+    expose:
+      - "3001"
+      - "3002"
+    deploy:
+      mode: replicated
+      replicas: 3
+    restart: always
+
+  db:
+    image: 'postgres:latest'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB", ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./.docker-volumes/db:/var/lib/postgresql/data/
+
   traefik:
     image: traefik:v3.0
     command:
@@ -19,22 +59,6 @@ services:
       - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.traefik.entrypoints=web"
       - "traefik.http.routers.traefik.service=api@internal"
-
-  lambdaban:
-    build:
-      context: .
-      dockerfile: ./cmd/web/Dockerfile
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.localhost`)"
-      - "traefik.http.routers.lambdaban.entrypoints=web"
-      - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
-    environment:
-      PORT: 3001 
-      METRICS_PORT: 3002
-    expose:
-      - "3001"
-      - "3002"
 
   prometheus:
     image: prom/prometheus:latest

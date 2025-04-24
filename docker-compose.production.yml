@@ -12,10 +12,37 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
       PORT: 3001
+      METRICS_PORT: 3002
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
     deploy:
       mode: replicated
       replicas: 3
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl localhost:3001/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: 'postgres:latest'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB", ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # ports:
+    #   - 5432:5432
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./.db-mount:/var/lib/postgresql/data/
+
 
   watchtower:
     image: containrrr/watchtower
