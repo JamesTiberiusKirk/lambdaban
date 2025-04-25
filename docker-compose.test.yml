@@ -4,7 +4,7 @@ services:
     image: ghcr.io/jamestiberiuskirk/lambdaban-web:master
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.lambdaban.rule=Host(`dev.lambdaban.vulpe.dev`)"
+      - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.vulpe.dev`)"
       - "traefik.http.routers.lambdaban.entrypoints=web"
       - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
       - "traefik.http.services.lambdaban.loadbalancer.sticky=true"
