@@ -32,6 +32,11 @@ func (c *customLoggerWriter) WriteHeader(statusCode int) {
 
 func Logger(log *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/api/healthcheck" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		start := time.Now()
 
 		cw := &customLoggerWriter{w: w}

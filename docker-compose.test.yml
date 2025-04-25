@@ -6,7 +6,7 @@ services:
     image: ghcr.io/jamestiberiuskirk/lambdaban-web:master
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.vulpe.dev`)"
+      - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.localhost`)"
       - "traefik.http.routers.lambdaban.entrypoints=web,websecure"
       - "traefik.http.routers.lambdaban.tls.certresolver=myresolver"
       - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
@@ -86,7 +86,7 @@ services:
       - "./letsencrypt:/letsencrypt"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.lambdaban.vulpe.dev`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.lambdaban.localhost`)"
       - "traefik.http.routers.traefik.entrypoints=web,websecure"
       - "traefik.http.routers.traefik.tls.certresolver=myresolver"
       - "traefik.http.routers.traefik.service=api@internal"
@@ -113,7 +113,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.lambdaban.vulpe.dev`)"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.lambdaban.localhost`)"
       - "traefik.http.routers.prometheus.entrypoints=web,websecure"
       - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
@@ -132,7 +132,7 @@ services:
       - grafana_data:/var/lib/grafana
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.lambdaban.vulpe.dev`)"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.lambdaban.localhost`)"
       - "traefik.http.routers.grafana.entrypoints=web,websecure"
       - "traefik.http.routers.grafana.tls.certresolver=myresolver"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
@@ -146,7 +146,7 @@ services:
     image: traefik/whoami
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`whoami.lambdaban.vulpe.dev`)"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.lambdaban.localhost`)"
       - "traefik.http.routers.whoami.entrypoints=web,websecure"
       - "traefik.http.routers.whoami.tls.certresolver=myresolver"
 

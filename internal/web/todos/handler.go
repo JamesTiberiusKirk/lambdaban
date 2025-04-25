@@ -19,10 +19,8 @@ type dbClient interface {
 	AddToUser(ctx context.Context, id string, ticket models.Ticket) error
 	CreateUser(ctx context.Context) (string, error)
 	DeleteTodoByUserAndTodoId(ctx context.Context, userId string, todoId string) error
-	// DeleteUserByID(ctx context.Context, id string) error
 	GetAllByUser(ctx context.Context, id string) ([]models.Ticket, error)
 	GetAllByUserSplitByStatus(ctx context.Context, id string) (todo []models.Ticket, inProgress []models.Ticket, done []models.Ticket, err error)
-	// InitTTLCleanup(ctx context.Context, interval time.Duration, olderThan time.Duration)
 	UpdateUser(ctx context.Context, userId string, tickets []models.Ticket) error
 }
 
@@ -109,6 +107,8 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 			Content: "Error fetching tickets",
 		})
 	}
+
+	h.log.Info("todos", "len", len(todo), "userid", userId)
 
 	w.WriteHeader(http.StatusOK)
 	component := page(r, userId, todo, inProgrss, done)
