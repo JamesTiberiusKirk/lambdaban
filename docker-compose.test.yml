@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
 
   lambdaban:
@@ -5,7 +7,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lambdaban.rule=Host(`lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.lambdaban.entrypoints=web"
+      - "traefik.http.routers.lambdaban.entrypoints=web,websecure"
+      - "traefik.http.routers.lambdaban.tls.certresolver=myresolver"
       - "traefik.http.services.lambdaban.loadbalancer.server.port=3001"
       - "traefik.http.services.lambdaban.loadbalancer.sticky=true"
       - "traefik.http.services.lambdaban.loadbalancer.sticky.cookie.name=sticky_lambdaban"
@@ -70,14 +73,22 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=dumitru.v.dv@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver"
       - "traefik.http.routers.traefik.service=api@internal"
     restart: always
 
@@ -103,7 +114,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.routers.prometheus.entrypoints=web,websecure"
+      - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     expose:
       - "9090"
@@ -121,7 +133,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.entrypoints=web,websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     expose:
       - "3000"
@@ -134,7 +147,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`whoami.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.routers.whoami.entrypoints=web,websecure"
+      - "traefik.http.routers.whoami.tls.certresolver=myresolver"
 
 volumes:
   prometheus_data:
