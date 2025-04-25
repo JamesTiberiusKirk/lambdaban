@@ -84,13 +84,15 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	userId := h.sm.GetString(r.Context(), "user")
 	if userId == "" {
-		userId, err := h.db.CreateUser(r.Context())
+		uid, err := h.db.CreateUser(r.Context())
 		if err != nil {
 			h.log.Error("Unable to create user", "error", err)
 			component := components.ServerError(r, "Unable to create user")
 			component.Render(r.Context(), w)
 			return
 		}
+
+		userId = uid
 
 		h.sm.Put(r.Context(), "user", userId)
 		h.nh.Notify(userId, notifications.Notification{
