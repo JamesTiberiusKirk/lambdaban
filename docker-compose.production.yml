@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
 
   lambdaban:
@@ -23,7 +25,7 @@ services:
       replicas: 3
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl localhost:3001/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,15 +33,15 @@ services:
       migrator:
         condition: service_completed_successfully
     expose:
-      - "3001" 
-      - "3002" 
+      - "3001"
+      - "3002"
 
   migrator:
     image: ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-    environment: 
-      DB_NAME: ${DB_NAME} 
+    environment:
+      DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_HOST: db:5432
@@ -50,41 +52,28 @@ services:
         restart: true
 
   db:
-    image: 'postgres:latest'
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB", ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    image: postgres:latest
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./.db-mount:/var/lib/postgresql/data/
-
-  watchtower:
-    image: containrrr/watchtower
-    command:
-      - "--label-enable"
-      - "--interval"
-      - "30"
-      - "--rolling-restart"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
 
   traefik:
     image: traefik:latest
     command:
-      - "--api.dashboard=true"
+      - "--api.dashboard=false"
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
-      - "--metrics.prometheus=true"
-      - "--metrics.prometheus.addEntryPointsLabels=true"
-      - "--metrics.prometheus.addServicesLabels=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=dumitru.v.dv@gmail.com"
@@ -98,26 +87,32 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.traefik.entrypoints=web"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.entrypoints=web,websecure"
       - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+      - "traefik.http.routers.traefik.service=api@internal"
     restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    command:
+      - "--label-enable"
+      - "--interval"
+      - "30"
+      - "--rolling-restart"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   prometheus:
     image: prom/prometheus:latest
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "9090:9090"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.prometheus.entrypoints=web"
-      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.entrypoints=web,websecure"
       - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     expose:
@@ -126,18 +121,15 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    ports:
-      - "3000:3000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.lambdaban.vulpe.dev`)"
-      - "traefik.http.routers.grafana.entrypoints=web"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.entrypoints=web,websecure"
       - "traefik.http.routers.grafana.tls.certresolver=myresolver"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     expose:
