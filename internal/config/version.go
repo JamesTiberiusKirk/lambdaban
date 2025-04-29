@@ -1,3 +1,3 @@
 package config
 
-const Version = "devel"
+var Version string

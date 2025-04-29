@@ -33,16 +33,16 @@ templ Layout(r *http.Request) {
 				</div>
 				{ children... }
 			</div>
-			<div class={version()}>
-				{config.Version}
+			<div class={ version() }>
+				Ver: { config.Version }
 			</div>
 		</body>
 	</html>
 }
 
-css version(){
-position: absolute;
-bottom: 10px;
-left: 10px;
-z-index: 100;
+css version() {
+	position: absolute;
+	bottom: 10px;
+	left: 10px;
+	z-index: 100;
 }

@@ -21,7 +21,11 @@ import (
 	"github.com/rickb777/servefiles/v3"
 )
 
+var Version = "devel"
+
 func main() {
+	config.Version = Version
+
 	config := config.GetConfig()
 
 	logger := slog.Default()

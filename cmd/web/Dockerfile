@@ -7,10 +7,15 @@ COPY go.mod go.sum ./
 RUN go get ./...
 
 COPY . .
+COPY .git .git
 
 
-RUN go build -ldflags "-X config.Version=$(git rev-parse --short HEAD)" -o lambdaban ./cmd/web/main.go
+RUN apk update
+RUN apk add git
 
+RUN git rev-parse --short HEAD
+
+RUN go build -ldflags="-X 'main.Version=$(git rev-parse --short HEAD)'" -o lambdaban ./cmd/web/main.go
 
 FROM alpine:latest
 RUN apk add --no-cache curl
