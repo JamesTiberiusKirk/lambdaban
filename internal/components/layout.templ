@@ -1,6 +1,7 @@
 package components
 
 import "net/http"
+import "github.com/JamesTiberiusKirk/lambdaban/internal/config"
 
 templ Layout(r *http.Request) {
 	<!DOCTYPE html>
@@ -32,6 +33,16 @@ templ Layout(r *http.Request) {
 				</div>
 				{ children... }
 			</div>
+			<div class={version()}>
+				{config.Version}
+			</div>
 		</body>
 	</html>
+}
+
+css version(){
+position: absolute;
+bottom: 10px;
+left: 10px;
+z-index: 100;
 }

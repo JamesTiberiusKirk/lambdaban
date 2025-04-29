@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/JamesTiberiusKirk/lambdaban/internal/components"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
-	"github.com/JamesTiberiusKirk/lambdaban/internal/util"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/web/notifications"
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
@@ -34,13 +34,29 @@ func NewHandler(log *slog.Logger, db dbClient, sm *scs.SessionManager, nh *notif
 }
 
 type handler struct {
-	log *slog.Logger
-	db  dbClient
-	sm  *scs.SessionManager
-	nh  *notifications.NotificationsHandler
+	version string
+	log     *slog.Logger
+	db      dbClient
+	sm      *scs.SessionManager
+	nh      *notifications.NotificationsHandler
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet && r.URL.String() == "/todos/" {
+		http.Redirect(w, r, "/todos", http.StatusPermanentRedirect)
+		return
+	}
+
+	if r.Method == http.MethodGet && r.URL.String() == "/todos/session-reset" {
+		h.sessionReset(w, r)
+		return
+	}
+
+	if r.URL.String() != "/todos" && !strings.HasPrefix(r.URL.String(), "/todos?") {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	switch r.Method {
 	case "GET":
 		h.get(w, r)
@@ -58,6 +74,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+}
+
+func (h *handler) sessionReset(w http.ResponseWriter, r *http.Request) {
+	h.log.Info("Resetting session")
+
+	h.sm.Remove(r.Context(), "user")
+	h.get(w, r)
+	return
 }
 
 func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +108,7 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	userId := h.sm.GetString(r.Context(), "user")
 	if userId == "" {
+		h.log.Info("Creating new user")
 		uid, err := h.db.CreateUser(r.Context())
 		if err != nil {
 			h.log.Error("Unable to create user", "error", err)
@@ -103,7 +128,6 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 
 	todo, inProgrss, done, err := h.db.GetAllByUserSplitByStatus(r.Context(), userId)
 	if err != nil {
-		r = util.AddUiMessageToRequest(r, util.MessageTypeError, "Error fetching tickets")
 		h.nh.Notify(userId, notifications.Notification{
 			Type:    "Error",
 			Content: "Error fetching tickets",
@@ -130,7 +154,15 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update state.
-	r.ParseForm()
+	err := r.ParseForm()
+	if err != nil {
+		h.log.Error("Error parsing form", "error", err.Error())
+		h.nh.Notify(userId, notifications.Notification{
+			Type:    "Error",
+			Content: "Error parsing form",
+		})
+		return
+	}
 
 	newTodo := models.Ticket{}
 
@@ -141,7 +173,7 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 	newTodo.LastUpdatedAt = time.Now()
 	newTodo.Id = uuid.NewString()
 
-	err := h.db.AddToUser(r.Context(), userId, newTodo)
+	err = h.db.AddToUser(r.Context(), userId, newTodo)
 	if err != nil {
 		h.log.Error("Error adding tickets", "error", err.Error())
 		h.nh.Notify(userId, notifications.Notification{
@@ -164,14 +196,20 @@ func (h *handler) put(w http.ResponseWriter, r *http.Request) {
 
 	userId := h.sm.GetString(r.Context(), "user")
 	if userId == "" {
-		r = util.AddUiMessageToRequest(r, util.MessageTypeError, "Error getting userId from session")
+		h.nh.Notify(userId, notifications.Notification{
+			Type:    "Error",
+			Content: "Error userId from session",
+		})
 		return
 	}
 
 	err := r.ParseForm()
 	if err != nil {
 		h.log.Error("Error parsing form", "error", err.Error())
-		r = util.AddUiMessageToRequest(r, util.MessageTypeError, "Error parsing form")
+		h.nh.Notify(userId, notifications.Notification{
+			Type:    "Error",
+			Content: "Error parsing form",
+		})
 		return
 	}
 
@@ -186,7 +224,10 @@ func (h *handler) put(w http.ResponseWriter, r *http.Request) {
 	currentTickets, err := h.db.GetAllByUser(r.Context(), userId)
 	if err != nil {
 		h.log.Error("error getting all user tickets", "error", err.Error())
-		r = util.AddUiMessageToRequest(r, util.MessageTypeError, "Error fetching tickets")
+		h.nh.Notify(userId, notifications.Notification{
+			Type:    "Error",
+			Content: "Error fetching tickets",
+		})
 		return
 	}
 
@@ -214,6 +255,10 @@ func (h *handler) put(w http.ResponseWriter, r *http.Request) {
 	err = h.db.UpdateUser(r.Context(), userId, updatedTickets)
 	if err != nil {
 		h.log.Error("error updating tickets", "error", err.Error())
+		h.nh.Notify(userId, notifications.Notification{
+			Type:    "Error",
+			Content: "Error updating tickets",
+		})
 		return
 	}
 }

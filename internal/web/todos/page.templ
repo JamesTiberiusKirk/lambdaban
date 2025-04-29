@@ -59,6 +59,14 @@ templ page(r *http.Request, userId string, todos, inProgress, done []models.Tick
 				</div>
 			</div>
 		</form>
+		<button
+			type="button"
+			class={ "cs-btn", resetSessionButton() }
+			hx-get="/todos/session-reset"
+			{ getBoardSwapAttribs()... }
+		>
+			Reset Session
+		</button>
 		@pageScript()
 	}
 }
@@ -177,8 +185,11 @@ script onTicketDeleteClick(ticketId string) {
 }
 
 templ ticketCard(t models.Ticket) {
-	<div id={ t.Id } class={ "ticket", "cs-panel" }>
-		<button class="cs-btn close" type="button" onclick={ onTicketDeleteClick(t.Id) }></button>
+	<div id={ t.Id } class={ ticket(), "cs-panel" }>
+		<div class="btn-bar">
+			<button class="cs-btn btn-edit" type="button" onclick="console.log('TEST')"></button>
+			<button class="cs-btn btn-close" type="button" onclick={ onTicketDeleteClick(t.Id) }></button>
+		</div>
 		<h1>{ t.Title }</h1>
 		<p>{ t.Description }</p>
 		<p><b>Status:</b> { t.Status.String() }</p>
@@ -239,6 +250,15 @@ css formContainer() {
 	align-items: center;
 }
 
+css resetSessionButton() {
+	position: fixed;
+	right: 180px;
+	bottom: 10px;
+	z-index: 100;
+	font-size: 32px;
+	padding: 15px;
+}
+
 css newTicketButton() {
 	position: fixed;
 	right: 10px;
@@ -246,4 +266,8 @@ css newTicketButton() {
 	z-index: 100;
 	font-size: 32px;
 	padding: 15px;
+}
+
+css ticket() {
+	cursor: grab;
 }

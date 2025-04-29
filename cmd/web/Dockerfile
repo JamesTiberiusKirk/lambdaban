@@ -8,7 +8,8 @@ RUN go get ./...
 
 COPY . .
 
-RUN go build -o lambdaban ./cmd/web/main.go
+
+RUN go build -ldflags "-X config.Version=$(git rev-parse --short HEAD)" -o lambdaban ./cmd/web/main.go
 
 
 FROM alpine:latest

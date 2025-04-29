@@ -58,7 +58,10 @@ func main() {
 	assets := servefiles.NewAssetHandler("./assets/").WithMaxAge(time.Hour)
 	serverMux.Handle("/assets/", http.StripPrefix("/assets/", assets))
 
-	serverMux.Handle("/todos", todos.NewHandler(logger, db, sessionManager, nh))
+	todosHandler := todos.NewHandler(logger, db, sessionManager, nh)
+	serverMux.Handle("/todos", todosHandler)
+	serverMux.Handle("/todos/", todosHandler)
+
 	serverMux.Handle("/api/healthcheck", healthcheck.NewHandler())
 
 	loggedServer := metrics.HTTPMiddleware(m, middleware.Logger(logger, serverMux))

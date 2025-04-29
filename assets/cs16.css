@@ -134,6 +134,7 @@ body { font-weight: 400;
 /* Buttons */
 
 .cs-btn {
+  cursor: pointer;
   background-color: var(--bg);
   color: #fff;
   padding: 4px 5px 3px;
