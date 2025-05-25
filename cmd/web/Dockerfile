@@ -22,4 +22,5 @@ RUN apk add --no-cache curl
 WORKDIR /app
 COPY --from=builder /app/lambdaban .
 COPY --from=builder /app/assets ./assets
+COPY --from=builder /app/internal/db/sql/ ./internal/db/sql/
 CMD ["./lambdaban"]
