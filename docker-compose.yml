@@ -23,8 +23,9 @@ services:
       replicas: 3
     restart: always
     depends_on:
-      migrator:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
 
   db:
     image: 'postgres:latest'

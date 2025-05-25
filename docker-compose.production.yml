@@ -30,8 +30,9 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      migrator:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
     expose:
       - "3001"
       - "3002"
