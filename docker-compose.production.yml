@@ -36,21 +36,6 @@ services:
       - "3001"
       - "3002"
 
-  migrator:
-    image: ghcr.io/jamestiberiuskirk/lambdaban-migrator:master
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-    environment:
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
-      DB_HOST: db:5432
-      DB_DISABLE_SSL: true
-    depends_on:
-      db:
-        condition: service_healthy
-        restart: true
-
   db:
     image: postgres:latest
     environment:

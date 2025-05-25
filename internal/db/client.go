@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/JamesTiberiusKirk/lambdaban/internal/metrics"
 	"github.com/JamesTiberiusKirk/lambdaban/internal/models"
+	"github.com/JamesTiberiusKirk/migrator/migrator"
 )
 
 type Client struct {
@@ -45,6 +47,21 @@ func InitClient(
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping the database: %w", err)
+	}
+
+	migrate, err := migrator.NewMigratorWithSqlClient(db, "./internal/db/sql/")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create migrator instance: %w", err)
+	}
+
+	err = migrate.ApplySchemaUp()
+	if err != nil && !errors.Is(err, migrator.ErrSchemaAlreadyInitialised) {
+		return nil, fmt.Errorf("failed to apply schema up: %w", err)
+	}
+
+	err = migrate.ApplyMigration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply schema up: %w", err)
 	}
 
 	return &Client{

@@ -6,3 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_updated_at ON users (updated_at);
+
+CREATE TABLE IF NOT EXISTS test_table (
+    id         UUID PRIMARY KEY,
+    test_name   varchar(255),
+);

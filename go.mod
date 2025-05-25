@@ -3,6 +3,7 @@ module github.com/JamesTiberiusKirk/lambdaban
 go 1.24.2
 
 require (
+	github.com/JamesTiberiusKirk/migrator v1.0.2
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/a-h/templ v0.3.857
 	github.com/alexedwards/scs/v2 v2.8.0
@@ -16,6 +17,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/knadh/goyesql v2.0.0+incompatible // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
