@@ -47,7 +47,6 @@ type event struct {
 	Event string `json:"event"`
 }
 
-// ServeHTTP upgrades the connection to SSE and manages notifications
 func (h *NotificationsHandler) ServeSSE(w http.ResponseWriter, r *http.Request) {
 	userID := h.sm.GetString(r.Context(), "user")
 	if userID == "" {
@@ -55,6 +54,8 @@ func (h *NotificationsHandler) ServeSSE(w http.ResponseWriter, r *http.Request) 
 		h.log.Error("SSE Unauthorized")
 		return
 	}
+
+	h.log.Info("SSE", "userID", userID)
 
 	// Ensure only one connection per user
 	h.mu.Lock()
@@ -89,6 +90,7 @@ func (h *NotificationsHandler) ServeSSE(w http.ResponseWriter, r *http.Request) 
 		h.mu.Unlock()
 		close(conn.NotifyCh)
 		h.m.SSENotificationConnections.Sub(1)
+		w.WriteHeader(http.StatusOK)
 	}()
 
 	ctx := r.Context()

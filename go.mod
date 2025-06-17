@@ -3,7 +3,7 @@ module github.com/JamesTiberiusKirk/lambdaban
 go 1.24.2
 
 require (
-	github.com/JamesTiberiusKirk/migrator v1.0.2
+	github.com/JamesTiberiusKirk/migrator v1.0.3
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/a-h/templ v0.3.857
 	github.com/alexedwards/scs/v2 v2.8.0

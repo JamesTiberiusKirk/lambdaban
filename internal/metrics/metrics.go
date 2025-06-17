@@ -12,6 +12,7 @@ import (
 type Metrics struct {
 	SSENotificationConnections prometheus.Gauge
 	ActiveUsers                prometheus.Gauge
+	ActiveInstances            prometheus.Gauge
 	HTTPRequestsTotal          *prometheus.CounterVec
 	HTTPRequestDuration        *prometheus.HistogramVec
 }
@@ -30,7 +31,12 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		ActiveUsers: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespaceName,
 			Name:      "active_users",
-			Help:      "Number of currently active users", // Fixed help message
+			Help:      "Number of currently active users",
+		}),
+		ActiveInstances: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespaceName,
+			Name:      "active_instances",
+			Help:      "Number of currently active instances",
 		}),
 		HTTPRequestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -55,6 +61,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 	reg.MustRegister(
 		m.SSENotificationConnections,
 		m.ActiveUsers,
+		m.ActiveInstances,
 		m.HTTPRequestsTotal,
 		m.HTTPRequestDuration,
 	)

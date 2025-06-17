@@ -1,7 +1,7 @@
-github.com/JamesTiberiusKirk/migrator v1.0.1 h1:eDeWRLKJFmS14PaQo4L5qykgaCNZeiQl56NO7nExaDY=
-github.com/JamesTiberiusKirk/migrator v1.0.1/go.mod h1:O93gCt0YOc3x9KDErYBd1P9O5oSumqnxjyuXrAiiWE0=
-github.com/JamesTiberiusKirk/migrator v1.0.2 h1:Us+Jgq9swBM+76OM2eTzR1EYPzM/G5vQusfXeXqqKgg=
-github.com/JamesTiberiusKirk/migrator v1.0.2/go.mod h1:O93gCt0YOc3x9KDErYBd1P9O5oSumqnxjyuXrAiiWE0=
+github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
+github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
+github.com/JamesTiberiusKirk/migrator v1.0.3 h1:Z/BEsAhAMHud1lEBOyNzeBK8XuwZXqPMa0t85HeixwQ=
+github.com/JamesTiberiusKirk/migrator v1.0.3/go.mod h1:O93gCt0YOc3x9KDErYBd1P9O5oSumqnxjyuXrAiiWE0=
 github.com/Masterminds/squirrel v1.5.4 h1:uUcX/aBc8O7Fg9kaISIUsHXdKuqehiXAMQTYX8afzqM=
 github.com/Masterminds/squirrel v1.5.4/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
 github.com/a-h/templ v0.3.857 h1:6EqcJuGZW4OL+2iZ3MD+NnIcG7nGkaQeF2Zq5kf9ZGg=

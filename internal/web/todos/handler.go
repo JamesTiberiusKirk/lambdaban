@@ -79,6 +79,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *handler) sessionReset(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Resetting session")
 
+	userId := h.sm.GetString(r.Context(), "user")
+	h.nh.Notify(userId, notifications.Notification{
+		Type:    "Info",
+		Content: "Resetting session",
+	})
+
 	h.sm.Remove(r.Context(), "user")
 	h.get(w, r)
 	return
@@ -107,6 +113,7 @@ func (h *handler) delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	userId := h.sm.GetString(r.Context(), "user")
+	h.log.Info("GETTING USER", "userID", userId)
 	if userId == "" {
 		h.log.Info("Creating new user")
 		uid, err := h.db.CreateUser(r.Context())

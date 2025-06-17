@@ -25,10 +25,8 @@ var Version = "devel"
 
 func main() {
 	config.Version = Version
-
 	config := config.GetConfig()
-
-	logger := slog.Default()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	promReg := prometheus.NewRegistry()
 	m := metrics.NewMetrics(promReg)
@@ -46,6 +44,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	db.InitTTLCleanup(ctx, 10*time.Minute, 2*time.Hour)
 
 	serverMux := http.NewServeMux()
@@ -69,7 +68,6 @@ func main() {
 	serverMux.Handle("/api/healthcheck", healthcheck.NewHandler())
 
 	loggedServer := metrics.HTTPMiddleware(m, middleware.Logger(logger, serverMux))
-	// loggedServer := middleware.Logger(logger, serverMux)
 
 	sessionedServer := sessionManager.LoadAndSave(loggedServer)
 

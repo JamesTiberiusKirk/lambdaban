@@ -20,7 +20,9 @@ RUN go build -ldflags="-X 'main.Version=$(git rev-parse --short HEAD)'" -o lambd
 FROM alpine:latest
 RUN apk add --no-cache curl
 WORKDIR /app
+
 COPY --from=builder /app/lambdaban .
 COPY --from=builder /app/assets ./assets
 COPY --from=builder /app/internal/db/sql/ ./internal/db/sql/
+
 CMD ["./lambdaban"]
